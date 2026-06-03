@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4f46e5">
+<title>Budget Giornaliero</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    min-height: 100vh;
+    padding: 16px 14px 100px;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 16px;
+    text-align: center;
+    letter-spacing: -0.3px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  .card h2 {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    color: #999;
+    margin-bottom: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 6px;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+  label:first-of-type { margin-top: 0; }
+
+  input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid #e2e2e2;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #1a1a2e;
+    background: #fafafa;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  input:focus { border-color: #4f46e5; background: #fff; }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 14px;
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 14px;
+    min-height: 52px;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-appearance: none;
+  }
+  .btn:active { background: #3730a3; transform: scale(0.98); }
+
+  .btn-secondary {
+    background: #f0f0f0;
+    color: #444;
+    font-size: 0.9rem;
+    margin-top: 12px;
+  }
+  .btn-secondary:active { background: #e0e0e0; }
+
+  .btn-conferma {
+    margin-top: 0;
+    width: auto;
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+
+  /* Info periodo */
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-size: 0.9rem;
+  }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-label { color: #888; }
+  .info-val { font-weight: 700; color: #1a1a2e; }
+
+  /* Quota principale */
+  .quota-main {
+    text-align: center;
+    padding: 10px 0 18px;
+  }
+  .quota-label { font-size: 0.85rem; color: #999; margin-bottom: 4px; }
+  .quota-amount {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #1a1a2e;
+    letter-spacing: -2px;
+    line-height: 1;
+  }
+  .quota-note { font-size: 0.78rem; color: #bbb; margin-top: 6px; }
+
+  .divider { height: 1px; background: #f0f0f0; margin: 14px 0; }
+
+  /* Input spesa */
+  .spesa-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .spesa-row > input {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  /* Spese di oggi */
+  .oggi-spese {
+    background: #f8f9ff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #555;
+  }
+  .oggi-spese .oggi-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; font-weight: 700; margin-bottom: 6px; }
+  .spesa-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #eef0ff;
+  }
+  .spesa-item:last-child { border-bottom: none; }
+  .spesa-item-ora { color: #aaa; font-size: 0.8rem; }
+  .spesa-item-val { font-weight: 700; color: #1a1a2e; }
+  .oggi-totale {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 2px solid #e8eaff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1a1a2e;
+  }
+
+  /* Risultato */
+  .risultato {
+    background: #f8f9ff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 14px;
+  }
+  .ris-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    font-size: 0.9rem;
+  }
+  .ris-label { color: #777; }
+  .ris-val { font-weight: 700; font-size: 1rem; }
+  .positivo { color: #16a34a; }
+  .negativo { color: #dc2626; }
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .badge-pos { background: #dcfce7; color: #16a34a; }
+  .badge-neg { background: #fee2e2; color: #dc2626; }
+
+  /* Storico */
+  .storico-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid #f3f3f3;
+    font-size: 0.88rem;
+  }
+  .storico-item:last-child { border-bottom: none; }
+  .storico-data { color: #888; }
+  .storico-cifre { text-align: right; }
+  .storico-spesa { font-weight: 700; color: #1a1a2e; font-size: 0.95rem; }
+  .storico-delta { font-size: 0.78rem; margin-top: 2px; }
+
+  .warn {
+    font-size: 0.83rem;
+    color: #dc2626;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 10px;
+    padding: 8px;
+    background: #fee2e2;
+    border-radius: 8px;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>💰 Budget Giornaliero</h1>
+
+  <!-- SETUP -->
+  <div class="card" id="card-setup">
+    <h2>Nuovo periodo</h2>
+    <label>Data di inizio</label>
+    <input type="date" id="inp-data-inizio">
+    <label>Budget disponibile (€)</label>
+    <input type="number" id="inp-budget" min="0" step="0.01" placeholder="es. 1500.00" inputmode="decimal">
+    <button class="btn" onclick="avviaSessione()">Inizia →</button>
+  </div>
+
+  <!-- PERIODO -->
+  <div class="card hidden" id="card-periodo">
+    <h2>Periodo contabile</h2>
+    <div class="info-row"><span class="info-label">Periodo</span><span class="info-val" id="lbl-periodo">—</span></div>
+    <div class="info-row"><span class="info-label">Giorni totali</span><span class="info-val" id="lbl-giorni-tot">—</span></div>
+    <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
+    <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
+    <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia</button>
+  </div>
+
+  <!-- OGGI -->
+  <div class="card hidden" id="card-oggi">
+    <h2 id="lbl-data-oggi">Oggi</h2>
+
+    <div class="quota-main">
+      <div class="quota-label">Puoi spendere oggi</div>
+      <div class="quota-amount" id="lbl-quota-oggi">€0</div>
+      <div class="quota-note" id="lbl-rimanenti">— giorni rimanenti</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <label>Aggiungi spesa (€)</label>
+    <div class="spesa-row">
+      <input type="number" id="inp-spesa" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+      <button class="btn btn-conferma" onclick="registraSpesa()">＋</button>
+    </div>
+
+    <!-- Spese inserite oggi -->
+    <div id="box-oggi-spese" class="hidden"></div>
+
+    <!-- Risultato aggiornato -->
+    <div class="risultato hidden" id="box-risultato">
+      <div class="ris-row"><span class="ris-label">Speso oggi</span><span class="ris-val" id="ris-speso">—</span></div>
+      <div class="ris-row"><span class="ris-label">Rispetto alla quota</span><span class="ris-val" id="ris-delta-quota">—</span></div>
+      <div class="divider" style="margin:6px 0"></div>
+      <div class="ris-row"><span class="ris-label">Nuova quota/giorno</span><span class="ris-val" id="ris-nuova-quota">—</span></div>
+      <div class="ris-row"><span class="ris-label">Variazione</span><span class="ris-val" id="ris-variazione">—</span></div>
+      <div class="ris-row"><span class="ris-label">Budget residuo</span><span class="ris-val" id="ris-residuo">—</span></div>
+      <div class="warn hidden" id="ris-warn">⚠ Budget esaurito o in rosso</div>
+    </div>
+  </div>
+
+  <!-- STORICO -->
+  <div class="card hidden" id="card-storico">
+    <h2>Storico spese</h2>
+    <div id="lista-storico"></div>
+  </div>
+</div>
+
+<script>
+let stato = {
+  dataInizio: null,
+  dataFine: null,
+  budget: 0,
+  quotaBase: 0,
+  giorni: 0,
+  // storico: [{data, spese:[{ora, importo}], totale, quotaGiorno}]
+  storico: []
+};
+
+function fmt(v) {
+  return '€' + Math.abs(v).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtData(d) {
+  return d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function fmtDataBreve(d) {
+  return d.toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'});
+}
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function toYMD(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function ora() {
+  const n = new Date();
+  return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+function prossimo23(dataInizio) {
+  const d = parseDate(dataInizio);
+  let anno = d.getFullYear(), mese = d.getMonth();
+  if (d.getDate() >= 23) { mese++; if (mese > 11) { mese = 0; anno++; } }
+  return new Date(anno, mese, 23);
+}
+function diffGiorni(a, b) {
+  return Math.round((b - a) / 86400000) + 1;
+}
+function oggi() {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+function load() {
+  try { const s = localStorage.getItem('bgt2_stato'); if (s) stato = JSON.parse(s); } catch(e) {}
+}
+function save() { localStorage.setItem('bgt2_stato', JSON.stringify(stato)); }
+
+function avviaSessione() {
+  const dataS = document.getElementById('inp-data-inizio').value;
+  const budget = parseFloat(document.getElementById('inp-budget').value);
+  if (!dataS) { alert('Inserisci una data di inizio.'); return; }
+  if (isNaN(budget) || budget <= 0) { alert('Inserisci un budget valido.'); return; }
+  const fine = prossimo23(dataS);
+  const inizio = parseDate(dataS);
+  const giorni = diffGiorni(inizio, fine);
+  stato = { dataInizio: dataS, dataFine: toYMD(fine), budget, quotaBase: budget / giorni, giorni, storico: [] };
+  save(); aggiorna();
+}
+
+function resetSessione() {
+  if (!confirm('Vuoi ricominciare? I dati del periodo attuale andranno persi.')) return;
+  localStorage.removeItem('bgt2_stato');
+  stato = { dataInizio: null, dataFine: null, budget: 0, quotaBase: 0, giorni: 0, storico: [] };
+  document.getElementById('card-setup').classList.remove('hidden');
+  ['card-periodo','card-oggi','card-storico'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
+function calcolaQuotaOggi() {
+  const speseTot = stato.storico.reduce((acc, r) => acc + r.totale, 0);
+  const budgetResiduo = stato.budget - speseTot;
+  const fine = parseDate(stato.dataFine);
+  const og = oggi();
+  const ggRim = diffGiorni(og, fine); // incluso oggi
+  if (ggRim <= 0) return { quota: 0, budgetResiduo, ggRim: 0 };
+  return { quota: budgetResiduo / ggRim, budgetResiduo, ggRim };
+}
+
+function aggiorna() {
+  if (!stato.dataInizio) return;
+  document.getElementById('card-setup').classList.add('hidden');
+  document.getElementById('card-periodo').classList.remove('hidden');
+  document.getElementById('card-oggi').classList.remove('hidden');
+
+  const inizio = parseDate(stato.dataInizio), fine = parseDate(stato.dataFine);
+  document.getElementById('lbl-periodo').textContent = fmtData(inizio) + ' → ' + fmtData(fine);
+  document.getElementById('lbl-giorni-tot').textContent = stato.giorni + ' giorni';
+  document.getElementById('lbl-budget-tot').textContent = fmt(stato.budget);
+  document.getElementById('lbl-quota-base').textContent = fmt(stato.quotaBase) + '/gg';
+
+  const og = oggi();
+  document.getElementById('lbl-data-oggi').textContent = 'Oggi — ' + fmtData(og);
+
+  const { quota, budgetResiduo, ggRim } = calcolaQuotaOggi();
+
+  if (ggRim <= 0) {
+    document.getElementById('lbl-quota-oggi').textContent = '—';
+    document.getElementById('lbl-rimanenti').textContent = 'Periodo terminato';
+  } else {
+    document.getElementById('lbl-quota-oggi').textContent = fmt(quota);
+    document.getElementById('lbl-rimanenti').textContent = ggRim + ' giorni rimanenti (incluso oggi)';
+  }
+
+  // Mostra spese di oggi se presenti
+  const ogYMD = toYMD(og);
+  const recOggi = stato.storico.find(r => r.data === ogYMD);
+  aggiornaBoxOggi(recOggi, quota);
+
+  // Storico
+  aggiornaStorico();
+}
+
+function aggiornaBoxOggi(recOggi, quotaOggi) {
+  const boxOggi = document.getElementById('box-oggi-spese');
+  const boxRis = document.getElementById('box-risultato');
+  if (!recOggi || recOggi.spese.length === 0) {
+    boxOggi.classList.add('hidden');
+    boxRis.classList.add('hidden');
+    return;
+  }
+  boxOggi.classList.remove('hidden');
+  const voci = recOggi.spese.map(s =>
+    `<div class="spesa-item">
+      <span class="spesa-item-ora">${s.ora}</span>
+      <span class="spesa-item-val">${fmt(s.importo)}</span>
+    </div>`
+  ).join('');
+  boxOggi.innerHTML = `
+    <div class="oggi-spese">
+      <div class="oggi-label">Spese inserite oggi</div>
+      ${voci}
+      ${recOggi.spese.length > 1 ? `<div class="oggi-totale"><span>Totale</span><span>${fmt(recOggi.totale)}</span></div>` : ''}
+    </div>`;
+  mostraRisultato(recOggi.totale, recOggi.quotaGiorno || quotaOggi);
+}
+
+function registraSpesa() {
+  const spesa = parseFloat(document.getElementById('inp-spesa').value);
+  if (isNaN(spesa) || spesa <= 0) { alert('Inserisci un importo valido.'); return; }
+  document.getElementById('inp-spesa').value = '';
+
+  const { quota } = calcolaQuotaOggi();
+  const ogYMD = toYMD(oggi());
+  let rec = stato.storico.find(r => r.data === ogYMD);
+  if (!rec) {
+    rec = { data: ogYMD, spese: [], totale: 0, quotaGiorno: quota };
+    stato.storico.push(rec);
+  }
+  rec.spese.push({ ora: ora(), importo: spesa });
+  rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
+  if (rec.spese.length === 1) rec.quotaGiorno = quota; // registra quota al momento della prima spesa
+
+  save();
+  aggiorna();
+  document.getElementById('inp-spesa').focus();
+}
+
+function mostraRisultato(totaleOggi, quotaGiorno) {
+  const box = document.getElementById('box-risultato');
+  box.classList.remove('hidden');
+
+  document.getElementById('ris-speso').textContent = fmt(totaleOggi);
+
+  const delta = totaleOggi - quotaGiorno;
+  const elDQ = document.getElementById('ris-delta-quota');
+  if (delta < -0.005) {
+    elDQ.innerHTML = `<span class="positivo">${fmt(delta)} in meno ✓</span>`;
+  } else if (delta > 0.005) {
+    elDQ.innerHTML = `<span class="negativo">−${fmt(delta)} in più</span>`;
+  } else {
+    elDQ.textContent = 'Esatto';
+  }
+
+  // Calcola nuova quota per i giorni SUCCESSIVI (escluso oggi)
+  const spesePrecedenti = stato.storico.reduce((acc, r) => acc + r.totale, 0);
+  const budgetResiduo = stato.budget - spesePrecedenti;
+  const fine = parseDate(stato.dataFine);
+  const og = oggi();
+  const ggSucc = diffGiorni(og, fine) - 1; // dopo oggi
+
+  const elNQ = document.getElementById('ris-nuova-quota');
+  const elVar = document.getElementById('ris-variazione');
+  const elRes = document.getElementById('ris-residuo');
+  const elWarn = document.getElementById('ris-warn');
+
+  if (ggSucc <= 0) {
+    elNQ.textContent = '—';
+    elVar.textContent = 'Nessun giorno rimanente';
+  } else {
+    const nuovaQuota = budgetResiduo / ggSucc;
+    const deltaNQ = nuovaQuota - quotaGiorno;
+    const pct = quotaGiorno !== 0 ? (deltaNQ / quotaGiorno * 100) : 0;
+    const sign = deltaNQ >= 0 ? '+' : '−';
+    const cls = deltaNQ >= 0 ? 'positivo' : 'negativo';
+    const bCls = deltaNQ >= 0 ? 'badge-pos' : 'badge-neg';
+
+    if (budgetResiduo < 0) {
+      elNQ.innerHTML = `<span class="negativo">−${fmt(Math.abs(nuovaQuota))}</span>`;
+    } else {
+      elNQ.innerHTML = `<span class="${cls}">${fmt(nuovaQuota)}</span>`;
+    }
+    elVar.innerHTML = `<span class="${cls}">${sign}${fmt(Math.abs(deltaNQ))}</span><span class="badge ${bCls}">${sign}${Math.abs(pct).toFixed(1)}%</span>`;
+  }
+
+  if (budgetResiduo < 0) {
+    elRes.innerHTML = `<span class="negativo">−${fmt(Math.abs(budgetResiduo))}</span>`;
+    elWarn.classList.remove('hidden');
+  } else {
+    elRes.textContent = fmt(budgetResiduo);
+    elWarn.classList.add('hidden');
+  }
+}
+
+function aggiornaStorico() {
+  const lista = document.getElementById('lista-storico');
+  const ord = [...stato.storico].sort((a,b) => b.data.localeCompare(a.data));
+  if (ord.length === 0) { document.getElementById('card-storico').classList.add('hidden'); return; }
+  document.getElementById('card-storico').classList.remove('hidden');
+  lista.innerHTML = ord.map(r => {
+    const delta = r.totale - r.quotaGiorno;
+    const sign = delta <= 0 ? '+' : '−';
+    const cls = delta <= 0 ? 'positivo' : 'negativo';
+    const pct = r.quotaGiorno !== 0 ? Math.abs(delta / r.quotaGiorno * 100).toFixed(1) : '0.0';
+    return `<div class="storico-item">
+      <span class="storico-data">${fmtDataBreve(parseDate(r.data))}</span>
+      <div class="storico-cifre">
+        <div class="storico-spesa">${fmt(r.totale)}</div>
+        <div class="storico-delta ${cls}">${sign}${fmt(Math.abs(delta))} · ${sign}${pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+load();
+if (stato.dataInizio) {
+  aggiorna();
+} else {
+  document.getElementById('inp-data-inizio').value = toYMD(oggi());
+}
+</script>
+</body>
+</html>
