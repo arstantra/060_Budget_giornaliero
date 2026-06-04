@@ -399,7 +399,20 @@ function aggiorna() {
     document.getElementById('lbl-quota-oggi').textContent = '—';
     document.getElementById('lbl-rimanenti').textContent = 'Periodo terminato';
   } else {
-    document.getElementById('lbl-quota-oggi').textContent = fmt(quota);
+    const ogYMD = toYMD(og);
+    const recOggi = stato.storico.find(r => r.data === ogYMD);
+    const spesaOggi = recOggi ? recOggi.totale : 0;
+    const rimanente = quota - spesaOggi;
+    const elQuota = document.getElementById('lbl-quota-oggi');
+    if (spesaOggi > 0) {
+      if (rimanente < -0.005) {
+        elQuota.innerHTML = `<span class="negativo">−${fmt(Math.abs(rimanente))}</span>`;
+      } else {
+        elQuota.innerHTML = `<span class="${rimanente < 0.005 ? '' : 'positivo'}">${fmt(rimanente)}</span>`;
+      }
+    } else {
+      elQuota.textContent = fmt(quota);
+    }
     document.getElementById('lbl-rimanenti').textContent = ggRim + ' giorni rimanenti (incluso oggi)';
   }
 
