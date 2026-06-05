@@ -95,6 +95,14 @@
   }
   .btn-secondary:active { background: #e0e0e0; }
 
+  .btn-export {
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+  .btn-export:active { background: #c8e6c9; }
+
   .btn-conferma {
     margin-top: 0;
     width: auto;
@@ -160,12 +168,37 @@
   .spesa-item {
     display: flex;
     justify-content: space-between;
-    padding: 4px 0;
+    align-items: center;
+    padding: 5px 0;
     border-bottom: 1px solid #eef0ff;
+    gap: 8px;
   }
   .spesa-item:last-child { border-bottom: none; }
-  .spesa-item-ora { color: #aaa; font-size: 0.8rem; }
-  .spesa-item-val { font-weight: 700; color: #1a1a2e; }
+  .spesa-item-ora { color: #aaa; font-size: 0.8rem; flex-shrink: 0; }
+  .spesa-item-val { font-weight: 700; color: #1a1a2e; flex: 1; text-align: right; }
+  .spesa-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .btn-edit-spesa {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.4;
+  }
+  .btn-del-spesa {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1.4;
+  }
   .oggi-totale {
     display: flex;
     justify-content: space-between;
@@ -206,6 +239,43 @@
   .badge-pos { background: #dcfce7; color: #16a34a; }
   .badge-neg { background: #fee2e2; color: #dc2626; }
 
+  /* Alert previsione */
+  .alert-box {
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 12px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .alert-ok {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    color: #14532d;
+  }
+  .alert-warn {
+    background: #fffbeb;
+    border: 1.5px solid #fcd34d;
+    color: #78350f;
+  }
+  .alert-danger {
+    background: #fef2f2;
+    border: 1.5px solid #fca5a5;
+    color: #7f1d1d;
+  }
+  .alert-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .alert-sub {
+    font-size: 0.82rem;
+    opacity: 0.85;
+    margin-top: 3px;
+  }
+
   /* Storico */
   .storico-item {
     display: flex;
@@ -231,6 +301,52 @@
     background: #fee2e2;
     border-radius: 8px;
   }
+
+  /* Modal modifica spesa */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal h3 { font-size: 1.05rem; font-weight: 800; color: #1a1a2e; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-modal-cancel {
+    flex: 1;
+    background: #f0f0f0;
+    color: #444;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-modal-confirm {
+    flex: 2;
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   .hidden { display: none; }
 </style>
 </head>
@@ -255,7 +371,8 @@
     <div class="info-row"><span class="info-label">Giorni totali</span><span class="info-val" id="lbl-giorni-tot">—</span></div>
     <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
     <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
-    <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia</button>
+    <button class="btn btn-export" onclick="esportaPeriodo()">⬇ Salva dati periodo</button>
+    <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia nuovo periodo</button>
   </div>
 
   <!-- OGGI -->
@@ -279,6 +396,9 @@
     <!-- Spese inserite oggi -->
     <div id="box-oggi-spese" class="hidden"></div>
 
+    <!-- Alert previsione -->
+    <div id="box-alert-previsione" class="hidden"></div>
+
     <!-- Risultato aggiornato -->
     <div class="risultato hidden" id="box-risultato">
       <div class="ris-row"><span class="ris-label">Speso oggi</span><span class="ris-val" id="ris-speso">—</span></div>
@@ -298,6 +418,19 @@
   </div>
 </div>
 
+<!-- MODAL MODIFICA SPESA -->
+<div class="modal-overlay" id="modal-modifica">
+  <div class="modal">
+    <h3>✏️ Modifica spesa</h3>
+    <label style="margin-top:0">Nuovo importo (€)</label>
+    <input type="number" id="modal-inp-importo" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="chiudiModal()">Annulla</button>
+      <button class="btn-modal-confirm" onclick="confermaModifica()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let stato = {
   dataInizio: null,
@@ -308,6 +441,9 @@ let stato = {
   // storico: [{data, spese:[{ora, importo}], totale, quotaGiorno}]
   storico: []
 };
+
+// Stato modifica in corso
+let modalCtx = { data: null, idx: null };
 
 function fmt(v) {
   return '€' + Math.abs(v).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -361,23 +497,202 @@ function avviaSessione() {
 }
 
 function resetSessione() {
-  if (!confirm('Vuoi ricominciare? I dati del periodo attuale andranno persi.')) return;
+  if (!confirm('Vuoi ricominciare? Prima salva i dati del periodo attuale se ne hai bisogno!')) return;
   localStorage.removeItem('bgt2_stato');
   stato = { dataInizio: null, dataFine: null, budget: 0, quotaBase: 0, giorni: 0, storico: [] };
   document.getElementById('card-setup').classList.remove('hidden');
   ['card-periodo','card-oggi','card-storico'].forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
+// ─── ESPORTA PERIODO ───────────────────────────────────────────────────────────
+function esportaPeriodo() {
+  if (!stato.dataInizio || stato.storico.length === 0) {
+    alert('Nessuna spesa registrata in questo periodo.');
+    return;
+  }
+  const inizio = parseDate(stato.dataInizio);
+  const fine = parseDate(stato.dataFine);
+  const totalSpeso = stato.storico.reduce((a, r) => a + r.totale, 0);
+  const residuo = stato.budget - totalSpeso;
+
+  let testo = `============================\n`;
+  testo += `  RIEPILOGO PERIODO\n`;
+  testo += `============================\n`;
+  testo += `Periodo:        ${fmtData(inizio)} → ${fmtData(fine)}\n`;
+  testo += `Budget totale:  ${fmt(stato.budget)}\n`;
+  testo += `Quota base/gg:  ${fmt(stato.quotaBase)}\n`;
+  testo += `Totale speso:   ${fmt(totalSpeso)}\n`;
+  testo += `Residuo:        ${residuo >= 0 ? fmt(residuo) : '−'+fmt(Math.abs(residuo))}\n`;
+  testo += `\n----------------------------\n`;
+  testo += `  DETTAGLIO GIORNALIERO\n`;
+  testo += `----------------------------\n`;
+
+  const ord = [...stato.storico].sort((a,b) => a.data.localeCompare(b.data));
+  ord.forEach(r => {
+    testo += `\n📅 ${fmtData(parseDate(r.data))} — Totale: ${fmt(r.totale)}\n`;
+    r.spese.forEach(s => {
+      testo += `   ${s.ora}  ${fmt(s.importo)}\n`;
+    });
+  });
+  testo += `\n============================\n`;
+  testo += `Esportato il ${new Date().toLocaleDateString('it-IT')}\n`;
+
+  // Scarica come file .txt
+  const blob = new Blob([testo], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const nomefile = `budget_${stato.dataInizio}_${stato.dataFine}.txt`;
+  a.href = url;
+  a.download = nomefile;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── PREVISIONE ESAURIMENTO BUDGET ────────────────────────────────────────────
+function calcolaPrevisione() {
+  if (stato.storico.length === 0) return null;
+
+  const fine = parseDate(stato.dataFine);
+  const og = oggi();
+  const ogYMD = toYMD(og);
+
+  // Giorni con spese (escludo oggi se incompleto — uso solo giorni passati completati)
+  const giorniPassati = stato.storico.filter(r => r.data < ogYMD);
+  if (giorniPassati.length === 0) return null;
+
+  const totaleSpesaPassata = giorniPassati.reduce((a, r) => a + r.totale, 0);
+  const mediaGiornaliera = totaleSpesaPassata / giorniPassati.length;
+
+  // Budget residuo al netto di tutto lo storico (incluso oggi)
+  const tuttoSpeso = stato.storico.reduce((a, r) => a + r.totale, 0);
+  const budgetResiduo = stato.budget - tuttoSpeso;
+
+  // Giorni rimanenti al periodo (incluso oggi)
+  const ggRimPeriodo = diffGiorni(og, fine);
+
+  // Se la media è 0 non possiamo fare previsioni sensate
+  if (mediaGiornaliera <= 0) return null;
+
+  // Quanti giorni puoi andare avanti con il residuo alla media attuale?
+  const giorniSostenibili = budgetResiduo / mediaGiornaliera;
+
+  // Data stimata esaurimento
+  const dataEsaurimento = new Date(og.getTime() + Math.floor(giorniSostenibili) * 86400000);
+  const giorniAnticipo = diffGiorni(dataEsaurimento, fine) - 1; // quanti giorni prima del 23
+
+  return {
+    mediaGiornaliera,
+    budgetResiduo,
+    ggRimPeriodo,
+    giorniSostenibili: Math.floor(giorniSostenibili),
+    dataEsaurimento,
+    giorniAnticipo,
+    fineData: fine
+  };
+}
+
+function mostraAlertPrevisione() {
+  const box = document.getElementById('box-alert-previsione');
+  const prev = calcolaPrevisione();
+
+  if (!prev) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+
+  const { mediaGiornaliera, budgetResiduo, ggRimPeriodo, giorniSostenibili, dataEsaurimento, giorniAnticipo, fineData } = prev;
+
+  let cls, icona, titolo, sub;
+
+  if (budgetResiduo <= 0) {
+    cls = 'alert-danger';
+    icona = '🚨';
+    titolo = 'Budget esaurito!';
+    sub = `Sei già in rosso di ${fmt(Math.abs(budgetResiduo))}. Devi rinforzare il budget immediatamente.`;
+  } else if (giorniAnticipo > 0) {
+    // Il budget finisce prima del 23
+    if (giorniAnticipo >= 7) {
+      cls = 'alert-danger';
+      icona = '🔴';
+    } else {
+      cls = 'alert-warn';
+      icona = '🟡';
+    }
+    titolo = `Budget esaurito il ${fmtData(dataEsaurimento)}`;
+    sub = `Media spesa: ${fmt(mediaGiornaliera)}/gg · ${giorniAnticipo} giorn${giorniAnticipo === 1 ? 'o' : 'i'} prima del ${fmtData(fineData)} · Riduci a ${fmt(budgetResiduo / ggRimPeriodo)}/gg per arrivare a fine periodo.`;
+  } else {
+    // Il budget copre tutto il periodo
+    cls = 'alert-ok';
+    icona = '✅';
+    titolo = 'Sei in regola!';
+    sub = `Media spesa: ${fmt(mediaGiornaliera)}/gg · Budget residuo sufficiente per i ${ggRimPeriodo} giorni rimanenti.`;
+  }
+
+  box.innerHTML = `
+    <div class="alert-box ${cls}">
+      <div class="alert-title">${icona} ${titolo}</div>
+      <div class="alert-sub">${sub}</div>
+    </div>`;
+}
+
+// ─── MODIFICA SPESA ───────────────────────────────────────────────────────────
+function apriModal(dataYMD, idx) {
+  const rec = stato.storico.find(r => r.data === dataYMD);
+  if (!rec) return;
+  modalCtx = { data: dataYMD, idx };
+  document.getElementById('modal-inp-importo').value = rec.spese[idx].importo;
+  document.getElementById('modal-modifica').classList.add('active');
+  setTimeout(() => document.getElementById('modal-inp-importo').select(), 50);
+}
+
+function chiudiModal() {
+  document.getElementById('modal-modifica').classList.remove('active');
+  modalCtx = { data: null, idx: null };
+}
+
+function confermaModifica() {
+  const nuovo = parseFloat(document.getElementById('modal-inp-importo').value);
+  if (isNaN(nuovo) || nuovo < 0) { alert('Importo non valido.'); return; }
+  const rec = stato.storico.find(r => r.data === modalCtx.data);
+  if (!rec) { chiudiModal(); return; }
+  if (nuovo === 0) {
+    // Elimina la voce
+    rec.spese.splice(modalCtx.idx, 1);
+  } else {
+    rec.spese[modalCtx.idx].importo = nuovo;
+  }
+  rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
+  // Se non ci sono più spese rimuovo il giorno dallo storico
+  if (rec.spese.length === 0) {
+    stato.storico = stato.storico.filter(r => r.data !== modalCtx.data);
+  }
+  chiudiModal();
+  save();
+  aggiorna();
+}
+
+function eliminaSpesa(dataYMD, idx) {
+  if (!confirm('Eliminare questa spesa?')) return;
+  const rec = stato.storico.find(r => r.data === dataYMD);
+  if (!rec) return;
+  rec.spese.splice(idx, 1);
+  rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
+  if (rec.spese.length === 0) {
+    stato.storico = stato.storico.filter(r => r.data !== dataYMD);
+  }
+  save(); aggiorna();
+}
+
+// ─── CALCOLO QUOTA OGGI ───────────────────────────────────────────────────────
 function calcolaQuotaOggi() {
   const speseTot = stato.storico.reduce((acc, r) => acc + r.totale, 0);
   const budgetResiduo = stato.budget - speseTot;
   const fine = parseDate(stato.dataFine);
   const og = oggi();
-  const ggRim = diffGiorni(og, fine); // incluso oggi
+  const ggRim = diffGiorni(og, fine);
   if (ggRim <= 0) return { quota: 0, budgetResiduo, ggRim: 0 };
   return { quota: budgetResiduo / ggRim, budgetResiduo, ggRim };
 }
 
+// ─── AGGIORNA UI ──────────────────────────────────────────────────────────────
 function aggiorna() {
   if (!stato.dataInizio) return;
   document.getElementById('card-setup').classList.add('hidden');
@@ -416,12 +731,13 @@ function aggiorna() {
     document.getElementById('lbl-rimanenti').textContent = ggRim + ' giorni rimanenti (incluso oggi)';
   }
 
-  // Mostra spese di oggi se presenti
   const ogYMD = toYMD(og);
   const recOggi = stato.storico.find(r => r.data === ogYMD);
   aggiornaBoxOggi(recOggi, quota);
 
-  // Storico
+  // Alert previsione (mostra sempre se ci sono dati)
+  mostraAlertPrevisione();
+
   aggiornaStorico();
 }
 
@@ -434,10 +750,15 @@ function aggiornaBoxOggi(recOggi, quotaOggi) {
     return;
   }
   boxOggi.classList.remove('hidden');
-  const voci = recOggi.spese.map(s =>
+  const dataYMD = recOggi.data;
+  const voci = recOggi.spese.map((s, idx) =>
     `<div class="spesa-item">
       <span class="spesa-item-ora">${s.ora}</span>
       <span class="spesa-item-val">${fmt(s.importo)}</span>
+      <div class="spesa-item-actions">
+        <button class="btn-edit-spesa" onclick="apriModal('${dataYMD}',${idx})">✏️</button>
+        <button class="btn-del-spesa" onclick="eliminaSpesa('${dataYMD}',${idx})">✕</button>
+      </div>
     </div>`
   ).join('');
   boxOggi.innerHTML = `
@@ -463,7 +784,7 @@ function registraSpesa() {
   }
   rec.spese.push({ ora: ora(), importo: spesa });
   rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
-  if (rec.spese.length === 1) rec.quotaGiorno = quota; // registra quota al momento della prima spesa
+  if (rec.spese.length === 1) rec.quotaGiorno = quota;
 
   save();
   aggiorna();
@@ -486,12 +807,11 @@ function mostraRisultato(totaleOggi, quotaGiorno) {
     elDQ.textContent = 'Esatto';
   }
 
-  // Calcola nuova quota per i giorni SUCCESSIVI (escluso oggi)
   const spesePrecedenti = stato.storico.reduce((acc, r) => acc + r.totale, 0);
   const budgetResiduo = stato.budget - spesePrecedenti;
   const fine = parseDate(stato.dataFine);
   const og = oggi();
-  const ggSucc = diffGiorni(og, fine) - 1; // dopo oggi
+  const ggSucc = diffGiorni(og, fine) - 1;
 
   const elNQ = document.getElementById('ris-nuova-quota');
   const elVar = document.getElementById('ris-variazione');
@@ -545,6 +865,11 @@ function aggiornaStorico() {
     </div>`;
   }).join('');
 }
+
+// Chiudi modal cliccando fuori
+document.getElementById('modal-modifica').addEventListener('click', function(e) {
+  if (e.target === this) chiudiModal();
+});
 
 load();
 if (stato.dataInizio) {
