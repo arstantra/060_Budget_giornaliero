@@ -226,6 +226,20 @@
   }
   .ris-label { color: #777; }
   .ris-val { font-weight: 700; font-size: 1rem; }
+
+  /* Budget residuo in evidenza */
+  .ris-budget-box {
+    background: #fff;
+    border: 2px solid #e0e7ff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ris-budget-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #999; }
+  .ris-budget-val { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.5px; }
   .positivo { color: #16a34a; }
   .negativo { color: #dc2626; }
   .badge {
@@ -401,12 +415,15 @@
 
     <!-- Risultato aggiornato -->
     <div class="risultato hidden" id="box-risultato">
+      <div class="ris-budget-box">
+        <span class="ris-budget-label">Budget rimasto</span>
+        <span class="ris-budget-val" id="ris-residuo">—</span>
+      </div>
       <div class="ris-row"><span class="ris-label">Speso oggi</span><span class="ris-val" id="ris-speso">—</span></div>
       <div class="ris-row"><span class="ris-label">Rispetto alla quota</span><span class="ris-val" id="ris-delta-quota">—</span></div>
       <div class="divider" style="margin:6px 0"></div>
       <div class="ris-row"><span class="ris-label">Nuova quota/giorno</span><span class="ris-val" id="ris-nuova-quota">—</span></div>
       <div class="ris-row"><span class="ris-label">Variazione</span><span class="ris-val" id="ris-variazione">—</span></div>
-      <div class="ris-row"><span class="ris-label">Budget residuo</span><span class="ris-val" id="ris-residuo">—</span></div>
       <div class="warn hidden" id="ris-warn">⚠ Budget esaurito o in rosso</div>
     </div>
   </div>
@@ -837,33 +854,52 @@ function mostraRisultato(totaleOggi, quotaGiorno) {
     elVar.innerHTML = `<span class="${cls}">${sign}${fmt(Math.abs(deltaNQ))}</span><span class="badge ${bCls}">${sign}${Math.abs(pct).toFixed(1)}%</span>`;
   }
 
+  const budgetBox = document.querySelector('.ris-budget-box');
   if (budgetResiduo < 0) {
     elRes.innerHTML = `<span class="negativo">−${fmt(Math.abs(budgetResiduo))}</span>`;
+    budgetBox.style.borderColor = '#fca5a5';
+    budgetBox.style.background = '#fef2f2';
     elWarn.classList.remove('hidden');
   } else {
-    elRes.textContent = fmt(budgetResiduo);
+    elRes.innerHTML = `<span class="positivo">${fmt(budgetResiduo)}</span>`;
+    budgetBox.style.borderColor = '#86efac';
+    budgetBox.style.background = '#f0fdf4';
     elWarn.classList.add('hidden');
   }
 }
 
 function aggiornaStorico() {
   const lista = document.getElementById('lista-storico');
-  const ord = [...stato.storico].sort((a,b) => b.data.localeCompare(a.data));
-  if (ord.length === 0) { document.getElementById('card-storico').classList.add('hidden'); return; }
+  const inizio = parseDate(stato.dataInizio);
+  const og = oggi();
+  const ieri = new Date(og.getTime() - 86400000);
+
+  // Nessun giorno passato ancora
+  if (ieri < inizio) { document.getElementById('card-storico').classList.add('hidden'); return; }
   document.getElementById('card-storico').classList.remove('hidden');
-  lista.innerHTML = ord.map(r => {
-    const delta = r.totale - r.quotaGiorno;
+
+  // Itera dal giorno più recente (ieri) fino a dataInizio
+  const righe = [];
+  let d = new Date(ieri);
+  while (d >= inizio) {
+    const ymd = toYMD(d);
+    const rec = stato.storico.find(r => r.data === ymd);
+    const totale = rec ? rec.totale : 0;
+    const quotaGiorno = rec ? (rec.quotaGiorno || stato.quotaBase) : stato.quotaBase;
+    const delta = totale - quotaGiorno;
     const sign = delta <= 0 ? '+' : '−';
     const cls = delta <= 0 ? 'positivo' : 'negativo';
-    const pct = r.quotaGiorno !== 0 ? Math.abs(delta / r.quotaGiorno * 100).toFixed(1) : '0.0';
-    return `<div class="storico-item">
-      <span class="storico-data">${fmtDataBreve(parseDate(r.data))}</span>
+    const pct = quotaGiorno !== 0 ? Math.abs(delta / quotaGiorno * 100).toFixed(1) : '0.0';
+    righe.push(`<div class="storico-item">
+      <span class="storico-data">${fmtDataBreve(parseDate(ymd))}</span>
       <div class="storico-cifre">
-        <div class="storico-spesa">${fmt(r.totale)}</div>
+        <div class="storico-spesa">${fmt(totale)}</div>
         <div class="storico-delta ${cls}">${sign}${fmt(Math.abs(delta))} · ${sign}${pct}%</div>
       </div>
-    </div>`;
-  }).join('');
+    </div>`);
+    d = new Date(d.getTime() - 86400000);
+  }
+  lista.innerHTML = righe.join('');
 }
 
 // Chiudi modal cliccando fuori
