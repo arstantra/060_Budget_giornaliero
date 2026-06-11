@@ -419,11 +419,13 @@
         <span class="ris-budget-label">Budget rimasto</span>
         <span class="ris-budget-val" id="ris-residuo">—</span>
       </div>
-      <div class="ris-row"><span class="ris-label">Speso oggi</span><span class="ris-val" id="ris-speso">—</span></div>
-      <div class="ris-row"><span class="ris-label">Rispetto alla quota</span><span class="ris-val" id="ris-delta-quota">—</span></div>
-      <div class="divider" style="margin:6px 0"></div>
-      <div class="ris-row"><span class="ris-label">Nuova quota/giorno</span><span class="ris-val" id="ris-nuova-quota">—</span></div>
-      <div class="ris-row"><span class="ris-label">Variazione</span><span class="ris-val" id="ris-variazione">—</span></div>
+      <div id="ris-dettaglio-oggi" class="hidden">
+        <div class="ris-row"><span class="ris-label">Speso oggi</span><span class="ris-val" id="ris-speso">—</span></div>
+        <div class="ris-row"><span class="ris-label">Rispetto alla quota</span><span class="ris-val" id="ris-delta-quota">—</span></div>
+        <div class="divider" style="margin:6px 0"></div>
+        <div class="ris-row"><span class="ris-label">Nuova quota/giorno</span><span class="ris-val" id="ris-nuova-quota">—</span></div>
+        <div class="ris-row"><span class="ris-label">Variazione</span><span class="ris-val" id="ris-variazione">—</span></div>
+      </div>
       <div class="warn hidden" id="ris-warn">⚠ Budget esaurito o in rosso</div>
     </div>
   </div>
@@ -763,9 +765,28 @@ function aggiornaBoxOggi(recOggi, quotaOggi) {
   const boxRis = document.getElementById('box-risultato');
   if (!recOggi || recOggi.spese.length === 0) {
     boxOggi.classList.add('hidden');
-    boxRis.classList.add('hidden');
+    document.getElementById('ris-dettaglio-oggi').classList.add('hidden');
+    // Mostra sempre il budget residuo
+    const speseTot = stato.storico.reduce((acc, r) => acc + r.totale, 0);
+    const budgetResiduo = stato.budget - speseTot;
+    const elRes = document.getElementById('ris-residuo');
+    const budgetBox = document.querySelector('.ris-budget-box');
+    const elWarn = document.getElementById('ris-warn');
+    if (budgetResiduo < 0) {
+      elRes.innerHTML = `<span class="negativo">−${fmt(Math.abs(budgetResiduo))}</span>`;
+      budgetBox.style.borderColor = '#fca5a5';
+      budgetBox.style.background = '#fef2f2';
+      elWarn.classList.remove('hidden');
+    } else {
+      elRes.innerHTML = `<span class="positivo">${fmt(budgetResiduo)}</span>`;
+      budgetBox.style.borderColor = '#86efac';
+      budgetBox.style.background = '#f0fdf4';
+      elWarn.classList.add('hidden');
+    }
+    boxRis.classList.remove('hidden');
     return;
   }
+  document.getElementById('ris-dettaglio-oggi').classList.remove('hidden');
   boxOggi.classList.remove('hidden');
   const dataYMD = recOggi.data;
   const voci = recOggi.spese.map((s, idx) =>
