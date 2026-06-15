@@ -39,7 +39,7 @@
     text-transform: uppercase;
     letter-spacing: 0.9px;
     color: #999;
-    margin-bottom: 14px;
+    margin-bottom: 0;
   }
 
   label {
@@ -112,6 +112,30 @@
     font-size: 0.95rem;
   }
 
+  /* Accordion periodo */
+  .accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .accordion-arrow {
+    font-size: 1rem;
+    color: #bbb;
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .accordion-arrow.open { transform: rotate(180deg); }
+  .accordion-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+  .accordion-body.open { max-height: 600px; }
+  .accordion-spacer { height: 14px; }
+
   /* Info periodo */
   .info-row {
     display: flex;
@@ -142,6 +166,36 @@
 
   .divider { height: 1px; background: #f0f0f0; margin: 14px 0; }
 
+  /* Tipo toggle */
+  .tipo-toggle {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 10px;
+  }
+  .tipo-btn {
+    flex: 1;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e2e2;
+    background: #f8f8f8;
+    color: #aaa;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-appearance: none;
+  }
+  .tipo-btn.active-ord {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #16a34a;
+  }
+  .tipo-btn.active-uta {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+  }
+
   /* Input spesa */
   .spesa-row {
     display: flex;
@@ -154,6 +208,49 @@
     font-size: 1.1rem;
     font-weight: 600;
   }
+
+  /* Badge tipo in lista spese */
+  .tipo-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .badge-ord { background: #dcfce7; color: #16a34a; }
+  .badge-uta { background: #ffedd5; color: #c2410c; }
+
+  /* Barra composizione */
+  .barra-comp-wrap { margin-top: 10px; }
+  .barra-comp {
+    display: flex;
+    height: 7px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  .barra-seg-ord { background: #4ade80; transition: width 0.35s ease; }
+  .barra-seg-uta { background: #fb923c; transition: width 0.35s ease; }
+  .barra-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 5px;
+  }
+  .barra-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: #999;
+  }
+  .barra-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-ord { background: #4ade80; }
+  .dot-uta { background: #fb923c; }
 
   /* Spese di oggi */
   .oggi-spese {
@@ -171,7 +268,7 @@
     align-items: center;
     padding: 5px 0;
     border-bottom: 1px solid #eef0ff;
-    gap: 8px;
+    gap: 6px;
   }
   .spesa-item:last-child { border-bottom: none; }
   .spesa-item-ora { color: #aaa; font-size: 0.8rem; flex-shrink: 0; }
@@ -360,6 +457,15 @@
     font-weight: 700;
     cursor: pointer;
   }
+  .modal-tipo-toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .modal-tipo-toggle .tipo-btn {
+    font-size: 0.88rem;
+    padding: 10px 12px;
+  }
 
   .hidden { display: none; }
 </style>
@@ -370,7 +476,7 @@
 
   <!-- SETUP -->
   <div class="card" id="card-setup">
-    <h2>Nuovo periodo</h2>
+    <h2 style="margin-bottom:14px">Nuovo periodo</h2>
     <label>Data di inizio</label>
     <input type="date" id="inp-data-inizio">
     <label>Budget disponibile (€)</label>
@@ -378,20 +484,26 @@
     <button class="btn" onclick="avviaSessione()">Inizia →</button>
   </div>
 
-  <!-- PERIODO -->
+  <!-- PERIODO (accordion) -->
   <div class="card hidden" id="card-periodo">
-    <h2>Periodo contabile</h2>
-    <div class="info-row"><span class="info-label">Periodo</span><span class="info-val" id="lbl-periodo">—</span></div>
-    <div class="info-row"><span class="info-label">Giorni totali</span><span class="info-val" id="lbl-giorni-tot">—</span></div>
-    <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
-    <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
-    <button class="btn btn-export" onclick="esportaPeriodo()">⬇ Salva dati periodo</button>
-    <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia nuovo periodo</button>
+    <div class="accordion-header" onclick="toggleAccordion()">
+      <h2>Periodo contabile</h2>
+      <span class="accordion-arrow" id="accordion-arrow">▾</span>
+    </div>
+    <div class="accordion-body" id="accordion-body">
+      <div class="accordion-spacer"></div>
+      <div class="info-row"><span class="info-label">Periodo</span><span class="info-val" id="lbl-periodo">—</span></div>
+      <div class="info-row"><span class="info-label">Giorni totali</span><span class="info-val" id="lbl-giorni-tot">—</span></div>
+      <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
+      <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
+      <button class="btn btn-export" onclick="esportaPeriodo()">⬇ Salva dati periodo</button>
+      <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia nuovo periodo</button>
+    </div>
   </div>
 
   <!-- OGGI -->
   <div class="card hidden" id="card-oggi">
-    <h2 id="lbl-data-oggi">Oggi</h2>
+    <h2 id="lbl-data-oggi" style="margin-bottom:0">Oggi</h2>
 
     <div class="quota-main">
       <div class="quota-label">Puoi spendere oggi</div>
@@ -402,6 +514,10 @@
     <div class="divider"></div>
 
     <label>Aggiungi spesa (€)</label>
+    <div class="tipo-toggle">
+      <button class="tipo-btn active-ord" id="tipo-btn-ord" onclick="setTipo('ordinaria')">Ordinaria</button>
+      <button class="tipo-btn" id="tipo-btn-uta" onclick="setTipo('unatantum')">Una tantum</button>
+    </div>
     <div class="spesa-row">
       <input type="number" id="inp-spesa" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
       <button class="btn btn-conferma" onclick="registraSpesa()">＋</button>
@@ -432,7 +548,7 @@
 
   <!-- STORICO -->
   <div class="card hidden" id="card-storico">
-    <h2>Storico spese</h2>
+    <h2 style="margin-bottom:14px">Storico spese</h2>
     <div id="lista-storico"></div>
   </div>
 </div>
@@ -441,8 +557,13 @@
 <div class="modal-overlay" id="modal-modifica">
   <div class="modal">
     <h3>✏️ Modifica spesa</h3>
-    <label style="margin-top:0">Nuovo importo (€)</label>
+    <label style="margin-top:0">Importo (€)</label>
     <input type="number" id="modal-inp-importo" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+    <label style="margin-top:14px">Tipo spesa</label>
+    <div class="modal-tipo-toggle">
+      <button class="tipo-btn" id="modal-tipo-ord" onclick="setModalTipo('ordinaria')">Ordinaria</button>
+      <button class="tipo-btn" id="modal-tipo-uta" onclick="setModalTipo('unatantum')">Una tantum</button>
+    </div>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="chiudiModal()">Annulla</button>
       <button class="btn-modal-confirm" onclick="confermaModifica()">Salva</button>
@@ -457,13 +578,39 @@ let stato = {
   budget: 0,
   quotaBase: 0,
   giorni: 0,
-  // storico: [{data, spese:[{ora, importo}], totale, quotaGiorno}]
+  // storico: [{data, spese:[{ora, importo, tipo}], totale, quotaGiorno}]
   storico: []
 };
 
 // Stato modifica in corso
-let modalCtx = { data: null, idx: null };
+let modalCtx = { data: null, idx: null, tipo: 'ordinaria' };
 
+// Tipo selezionato per la prossima spesa
+let tipoSelezionato = 'ordinaria';
+
+// ─── TIPO TOGGLE ──────────────────────────────────────────────────────────────
+function setTipo(t) {
+  tipoSelezionato = t;
+  document.getElementById('tipo-btn-ord').className = 'tipo-btn' + (t === 'ordinaria' ? ' active-ord' : '');
+  document.getElementById('tipo-btn-uta').className = 'tipo-btn' + (t === 'unatantum' ? ' active-uta' : '');
+}
+
+function setModalTipo(t) {
+  modalCtx.tipo = t;
+  document.getElementById('modal-tipo-ord').className = 'tipo-btn' + (t === 'ordinaria' ? ' active-ord' : '');
+  document.getElementById('modal-tipo-uta').className = 'tipo-btn' + (t === 'unatantum' ? ' active-uta' : '');
+}
+
+// ─── ACCORDION PERIODO ────────────────────────────────────────────────────────
+function toggleAccordion() {
+  const body = document.getElementById('accordion-body');
+  const arrow = document.getElementById('accordion-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.classList.toggle('open', !isOpen);
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
 function fmt(v) {
   return '€' + Math.abs(v).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
@@ -498,11 +645,22 @@ function oggi() {
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
 }
 
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
 function load() {
-  try { const s = localStorage.getItem('bgt2_stato'); if (s) stato = JSON.parse(s); } catch(e) {}
+  try {
+    const s = localStorage.getItem('bgt2_stato');
+    if (s) {
+      stato = JSON.parse(s);
+      // Migrazione: aggiungi tipo='ordinaria' alle spese vecchie
+      stato.storico.forEach(r => {
+        r.spese.forEach(sp => { if (!sp.tipo) sp.tipo = 'ordinaria'; });
+      });
+    }
+  } catch(e) {}
 }
 function save() { localStorage.setItem('bgt2_stato', JSON.stringify(stato)); }
 
+// ─── SESSIONE ─────────────────────────────────────────────────────────────────
 function avviaSessione() {
   const dataS = document.getElementById('inp-data-inizio').value;
   const budget = parseFloat(document.getElementById('inp-budget').value);
@@ -523,7 +681,7 @@ function resetSessione() {
   ['card-periodo','card-oggi','card-storico'].forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
-// ─── ESPORTA PERIODO ───────────────────────────────────────────────────────────
+// ─── ESPORTA PERIODO ──────────────────────────────────────────────────────────
 function esportaPeriodo() {
   if (!stato.dataInizio || stato.storico.length === 0) {
     alert('Nessuna spesa registrata in questo periodo.');
@@ -548,123 +706,86 @@ function esportaPeriodo() {
 
   const ord = [...stato.storico].sort((a,b) => a.data.localeCompare(b.data));
   ord.forEach(r => {
-    testo += `\n📅 ${fmtData(parseDate(r.data))} — Totale: ${fmt(r.totale)}\n`;
+    const totOrd = r.spese.filter(s => s.tipo !== 'unatantum').reduce((a,s) => a + s.importo, 0);
+    const totUta = r.spese.filter(s => s.tipo === 'unatantum').reduce((a,s) => a + s.importo, 0);
+    testo += `\n📅 ${fmtData(parseDate(r.data))} — Totale: ${fmt(r.totale)}`;
+    if (totUta > 0) testo += ` (ord: ${fmt(totOrd)} · u.t.: ${fmt(totUta)})`;
+    testo += `\n`;
     r.spese.forEach(s => {
-      testo += `   ${s.ora}  ${fmt(s.importo)}\n`;
+      const tag = s.tipo === 'unatantum' ? ' [una tantum]' : '';
+      testo += `   ${s.ora}  ${fmt(s.importo)}${tag}\n`;
     });
   });
   testo += `\n============================\n`;
   testo += `Esportato il ${new Date().toLocaleDateString('it-IT')}\n`;
 
-  // Scarica come file .txt
   const blob = new Blob([testo], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const nomefile = `budget_${stato.dataInizio}_${stato.dataFine}.txt`;
   a.href = url;
-  a.download = nomefile;
+  a.download = `budget_${stato.dataInizio}_${stato.dataFine}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-// ─── PREVISIONE ESAURIMENTO BUDGET ────────────────────────────────────────────
+// ─── PREVISIONE ───────────────────────────────────────────────────────────────
 function calcolaPrevisione() {
   if (stato.storico.length === 0) return null;
-
   const fine = parseDate(stato.dataFine);
   const og = oggi();
   const ogYMD = toYMD(og);
-
-  // Giorni con spese (escludo oggi se incompleto — uso solo giorni passati completati)
   const giorniPassati = stato.storico.filter(r => r.data < ogYMD);
   if (giorniPassati.length === 0) return null;
-
   const totaleSpesaPassata = giorniPassati.reduce((a, r) => a + r.totale, 0);
   const mediaGiornaliera = totaleSpesaPassata / giorniPassati.length;
-
-  // Budget residuo al netto di tutto lo storico (incluso oggi)
   const tuttoSpeso = stato.storico.reduce((a, r) => a + r.totale, 0);
   const budgetResiduo = stato.budget - tuttoSpeso;
-
-  // Giorni rimanenti al periodo (incluso oggi)
   const ggRimPeriodo = diffGiorni(og, fine);
-
-  // Se la media è 0 non possiamo fare previsioni sensate
   if (mediaGiornaliera <= 0) return null;
-
-  // Quanti giorni puoi andare avanti con il residuo alla media attuale?
   const giorniSostenibili = budgetResiduo / mediaGiornaliera;
-
-  // Data stimata esaurimento
   const dataEsaurimento = new Date(og.getTime() + Math.floor(giorniSostenibili) * 86400000);
-  const giorniAnticipo = diffGiorni(dataEsaurimento, fine) - 1; // quanti giorni prima del 23
-
-  return {
-    mediaGiornaliera,
-    budgetResiduo,
-    ggRimPeriodo,
-    giorniSostenibili: Math.floor(giorniSostenibili),
-    dataEsaurimento,
-    giorniAnticipo,
-    fineData: fine
-  };
+  const giorniAnticipo = diffGiorni(dataEsaurimento, fine) - 1;
+  return { mediaGiornaliera, budgetResiduo, ggRimPeriodo, giorniSostenibili: Math.floor(giorniSostenibili), dataEsaurimento, giorniAnticipo, fineData: fine };
 }
 
 function mostraAlertPrevisione() {
   const box = document.getElementById('box-alert-previsione');
   const prev = calcolaPrevisione();
-
   if (!prev) { box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
-
   const { mediaGiornaliera, budgetResiduo, ggRimPeriodo, giorniSostenibili, dataEsaurimento, giorniAnticipo, fineData } = prev;
-
   let cls, icona, titolo, sub;
-
   if (budgetResiduo <= 0) {
-    cls = 'alert-danger';
-    icona = '🚨';
-    titolo = 'Budget esaurito!';
+    cls = 'alert-danger'; icona = '🚨'; titolo = 'Budget esaurito!';
     sub = `Sei già in rosso di ${fmt(Math.abs(budgetResiduo))}. Devi rinforzare il budget immediatamente.`;
   } else if (giorniAnticipo > 0) {
-    // Il budget finisce prima del 23
-    if (giorniAnticipo >= 7) {
-      cls = 'alert-danger';
-      icona = '🔴';
-    } else {
-      cls = 'alert-warn';
-      icona = '🟡';
-    }
+    cls = giorniAnticipo >= 7 ? 'alert-danger' : 'alert-warn';
+    icona = giorniAnticipo >= 7 ? '🔴' : '🟡';
     titolo = `Budget esaurito il ${fmtData(dataEsaurimento)}`;
     sub = `Media spesa: ${fmt(mediaGiornaliera)}/gg · ${giorniAnticipo} giorn${giorniAnticipo === 1 ? 'o' : 'i'} prima del ${fmtData(fineData)} · Riduci a ${fmt(budgetResiduo / ggRimPeriodo)}/gg per arrivare a fine periodo.`;
   } else {
-    // Il budget copre tutto il periodo
-    cls = 'alert-ok';
-    icona = '✅';
-    titolo = 'Sei in regola!';
+    cls = 'alert-ok'; icona = '✅'; titolo = 'Sei in regola!';
     sub = `Media spesa: ${fmt(mediaGiornaliera)}/gg · Budget residuo sufficiente per i ${ggRimPeriodo} giorni rimanenti.`;
   }
-
-  box.innerHTML = `
-    <div class="alert-box ${cls}">
-      <div class="alert-title">${icona} ${titolo}</div>
-      <div class="alert-sub">${sub}</div>
-    </div>`;
+  box.innerHTML = `<div class="alert-box ${cls}"><div class="alert-title">${icona} ${titolo}</div><div class="alert-sub">${sub}</div></div>`;
 }
 
 // ─── MODIFICA SPESA ───────────────────────────────────────────────────────────
 function apriModal(dataYMD, idx) {
   const rec = stato.storico.find(r => r.data === dataYMD);
   if (!rec) return;
-  modalCtx = { data: dataYMD, idx };
-  document.getElementById('modal-inp-importo').value = rec.spese[idx].importo;
+  const spesa = rec.spese[idx];
+  const t = spesa.tipo || 'ordinaria';
+  modalCtx = { data: dataYMD, idx, tipo: t };
+  document.getElementById('modal-inp-importo').value = spesa.importo;
+  setModalTipo(t);
   document.getElementById('modal-modifica').classList.add('active');
   setTimeout(() => document.getElementById('modal-inp-importo').select(), 50);
 }
 
 function chiudiModal() {
   document.getElementById('modal-modifica').classList.remove('active');
-  modalCtx = { data: null, idx: null };
+  modalCtx = { data: null, idx: null, tipo: 'ordinaria' };
 }
 
 function confermaModifica() {
@@ -673,13 +794,12 @@ function confermaModifica() {
   const rec = stato.storico.find(r => r.data === modalCtx.data);
   if (!rec) { chiudiModal(); return; }
   if (nuovo === 0) {
-    // Elimina la voce
     rec.spese.splice(modalCtx.idx, 1);
   } else {
     rec.spese[modalCtx.idx].importo = nuovo;
+    rec.spese[modalCtx.idx].tipo = modalCtx.tipo || 'ordinaria';
   }
   rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
-  // Se non ci sono più spese rimuovo il giorno dallo storico
   if (rec.spese.length === 0) {
     stato.storico = stato.storico.filter(r => r.data !== modalCtx.data);
   }
@@ -711,7 +831,7 @@ function calcolaQuotaOggi() {
   return { quota: budgetResiduo / ggRim, budgetResiduo, ggRim };
 }
 
-// ─── AGGIORNA UI ──────────────────────────────────────────────────────────────
+// ─── AGGIORNA UI ─────────────────────────────────────────────────────────────
 function aggiorna() {
   if (!stato.dataInizio) return;
   document.getElementById('card-setup').classList.add('hidden');
@@ -754,19 +874,17 @@ function aggiorna() {
   const recOggi = stato.storico.find(r => r.data === ogYMD);
   aggiornaBoxOggi(recOggi, quota);
 
-  // Alert previsione (mostra sempre se ci sono dati)
   mostraAlertPrevisione();
-
   aggiornaStorico();
 }
 
 function aggiornaBoxOggi(recOggi, quotaOggi) {
   const boxOggi = document.getElementById('box-oggi-spese');
   const boxRis = document.getElementById('box-risultato');
+
   if (!recOggi || recOggi.spese.length === 0) {
     boxOggi.classList.add('hidden');
     document.getElementById('ris-dettaglio-oggi').classList.add('hidden');
-    // Mostra sempre il budget residuo
     const speseTot = stato.storico.reduce((acc, r) => acc + r.totale, 0);
     const budgetResiduo = stato.budget - speseTot;
     const elRes = document.getElementById('ris-residuo');
@@ -786,25 +904,56 @@ function aggiornaBoxOggi(recOggi, quotaOggi) {
     boxRis.classList.remove('hidden');
     return;
   }
+
   document.getElementById('ris-dettaglio-oggi').classList.remove('hidden');
   boxOggi.classList.remove('hidden');
+
   const dataYMD = recOggi.data;
-  const voci = recOggi.spese.map((s, idx) =>
-    `<div class="spesa-item">
+
+  // Calcola totali per barra composizione
+  const totOrd = recOggi.spese.reduce((a, s) => a + (s.tipo !== 'unatantum' ? s.importo : 0), 0);
+  const totUta = recOggi.spese.reduce((a, s) => a + (s.tipo === 'unatantum' ? s.importo : 0), 0);
+  const totTot = totOrd + totUta;
+  const pctOrd = totTot > 0 ? (totOrd / totTot * 100).toFixed(1) : 100;
+  const pctUta = totTot > 0 ? (totUta / totTot * 100).toFixed(1) : 0;
+
+  // Barra solo se ci sono entrambi i tipi (altrimenti non serve)
+  const mostraBarra = totTot > 0;
+  const barraHtml = mostraBarra ? `
+    <div class="barra-comp-wrap">
+      <div class="barra-comp">
+        <div class="barra-seg-ord" style="width:${pctOrd}%"></div>
+        <div class="barra-seg-uta" style="width:${pctUta}%"></div>
+      </div>
+      <div class="barra-legend">
+        <span class="barra-legend-item"><span class="barra-dot dot-ord"></span>Ordinaria ${fmt(totOrd)}</span>
+        ${totUta > 0 ? `<span class="barra-legend-item"><span class="barra-dot dot-uta"></span>Una tantum ${fmt(totUta)}</span>` : ''}
+      </div>
+    </div>` : '';
+
+  const voci = recOggi.spese.map((s, idx) => {
+    const tipo = s.tipo || 'ordinaria';
+    const badgeCls = tipo === 'ordinaria' ? 'badge-ord' : 'badge-uta';
+    const badgeTxt = tipo === 'ordinaria' ? 'ord.' : 'u.t.';
+    return `<div class="spesa-item">
       <span class="spesa-item-ora">${s.ora}</span>
+      <span class="tipo-badge ${badgeCls}">${badgeTxt}</span>
       <span class="spesa-item-val">${fmt(s.importo)}</span>
       <div class="spesa-item-actions">
         <button class="btn-edit-spesa" onclick="apriModal('${dataYMD}',${idx})">✏️</button>
         <button class="btn-del-spesa" onclick="eliminaSpesa('${dataYMD}',${idx})">✕</button>
       </div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
+
   boxOggi.innerHTML = `
     <div class="oggi-spese">
       <div class="oggi-label">Spese inserite oggi</div>
       ${voci}
       ${recOggi.spese.length > 1 ? `<div class="oggi-totale"><span>Totale</span><span>${fmt(recOggi.totale)}</span></div>` : ''}
+      ${barraHtml}
     </div>`;
+
   mostraRisultato(recOggi.totale, recOggi.quotaGiorno || quotaOggi);
 }
 
@@ -820,7 +969,7 @@ function registraSpesa() {
     rec = { data: ogYMD, spese: [], totale: 0, quotaGiorno: quota };
     stato.storico.push(rec);
   }
-  rec.spese.push({ ora: ora(), importo: spesa });
+  rec.spese.push({ ora: ora(), importo: spesa, tipo: tipoSelezionato });
   rec.totale = rec.spese.reduce((a, s) => a + s.importo, 0);
   if (rec.spese.length === 1) rec.quotaGiorno = quota;
 
@@ -866,7 +1015,6 @@ function mostraRisultato(totaleOggi, quotaGiorno) {
     const sign = deltaNQ >= 0 ? '+' : '−';
     const cls = deltaNQ >= 0 ? 'positivo' : 'negativo';
     const bCls = deltaNQ >= 0 ? 'badge-pos' : 'badge-neg';
-
     if (budgetResiduo < 0) {
       elNQ.innerHTML = `<span class="negativo">−${fmt(Math.abs(nuovaQuota))}</span>`;
     } else {
@@ -894,12 +1042,8 @@ function aggiornaStorico() {
   const inizio = parseDate(stato.dataInizio);
   const og = oggi();
   const ieri = new Date(og.getTime() - 86400000);
-
-  // Nessun giorno passato ancora
   if (ieri < inizio) { document.getElementById('card-storico').classList.add('hidden'); return; }
   document.getElementById('card-storico').classList.remove('hidden');
-
-  // Itera dal giorno più recente (ieri) fino a dataInizio
   const righe = [];
   let d = new Date(ieri);
   while (d >= inizio) {
