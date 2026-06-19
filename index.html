@@ -498,6 +498,17 @@
       <div class="info-row"><span class="info-label">Giorni totali</span><span class="info-val" id="lbl-giorni-tot">—</span></div>
       <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
       <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
+      <div id="barra-periodo-wrap" class="hidden" style="margin-top:14px">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#999;margin-bottom:6px">Composizione spese periodo</div>
+        <div class="barra-comp">
+          <div class="barra-seg-ord" id="barra-periodo-ord" style="width:0%"></div>
+          <div class="barra-seg-uta" id="barra-periodo-uta" style="width:0%"></div>
+        </div>
+        <div class="barra-legend">
+          <span class="barra-legend-item"><span class="barra-dot dot-ord"></span>Ordinarie <span id="barra-periodo-ord-val">—</span></span>
+          <span class="barra-legend-item"><span class="barra-dot dot-uta"></span>Una tantum <span id="barra-periodo-uta-val">—</span></span>
+        </div>
+      </div>
       <button class="btn btn-export" onclick="esportaPeriodo()">⬇ Salva dati periodo</button>
       <button class="btn" style="background:#eff6ff;color:#1d4ed8;margin-top:8px" onclick="apriBudgetModal()">✏️ Modifica budget totale</button>
       <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia nuovo periodo</button>
@@ -620,6 +631,18 @@ function confermaBudget() {
   if (isNaN(nuovo) || nuovo <= 0) { alert('Inserisci un budget valido.'); return; }
   stato.budget = nuovo;
   stato.quotaBase = nuovo / stato.giorni;
+
+  // Ricalcola quotaGiorno per oggi con il nuovo budget
+  const ogYMD = toYMD(oggi());
+  const recOggi = stato.storico.find(r => r.data === ogYMD);
+  if (recOggi) {
+    const spesePrimaOggi = stato.storico
+      .filter(r => r.data !== ogYMD)
+      .reduce((acc, r) => acc + r.totale, 0);
+    const ggRim = diffGiorni(oggi(), parseDate(stato.dataFine));
+    if (ggRim > 0) recOggi.quotaGiorno = (nuovo - spesePrimaOggi) / ggRim;
+  }
+
   chiudiBudgetModal();
   save();
   aggiorna();
@@ -909,7 +932,23 @@ function aggiorna() {
   aggiornaBoxOggi(recOggi, quota);
 
   mostraAlertPrevisione();
+  aggiornBarraPeriodo();
   aggiornaStorico();
+}
+
+function aggiornBarraPeriodo() {
+  const wrap = document.getElementById('barra-periodo-wrap');
+  const totOrd = stato.storico.reduce((a, r) => a + r.spese.filter(s => s.tipo !== 'unatantum').reduce((b, s) => b + s.importo, 0), 0);
+  const totUta = stato.storico.reduce((a, r) => a + r.spese.filter(s => s.tipo === 'unatantum').reduce((b, s) => b + s.importo, 0), 0);
+  const totTot = totOrd + totUta;
+  if (totTot === 0) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  const pctOrd = (totOrd / totTot * 100).toFixed(1);
+  const pctUta = (totUta / totTot * 100).toFixed(1);
+  document.getElementById('barra-periodo-ord').style.width = pctOrd + '%';
+  document.getElementById('barra-periodo-uta').style.width = pctUta + '%';
+  document.getElementById('barra-periodo-ord-val').textContent = fmt(totOrd);
+  document.getElementById('barra-periodo-uta-val').textContent = fmt(totUta);
 }
 
 function aggiornaBoxOggi(recOggi, quotaOggi) {
