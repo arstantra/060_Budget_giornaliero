@@ -479,6 +479,8 @@
     <h2 style="margin-bottom:14px">Nuovo periodo</h2>
     <label>Data di inizio</label>
     <input type="date" id="inp-data-inizio">
+    <label>Data di fine</label>
+    <input type="date" id="inp-data-fine">
     <label>Budget disponibile (€)</label>
     <input type="number" id="inp-budget" min="0" step="0.01" placeholder="es. 1500.00" inputmode="decimal">
     <button class="btn" onclick="avviaSessione()">Inizia →</button>
@@ -497,6 +499,7 @@
       <div class="info-row"><span class="info-label">Budget totale</span><span class="info-val" id="lbl-budget-tot">—</span></div>
       <div class="info-row"><span class="info-label">Quota base/giorno</span><span class="info-val" id="lbl-quota-base">—</span></div>
       <button class="btn btn-export" onclick="esportaPeriodo()">⬇ Salva dati periodo</button>
+      <button class="btn" style="background:#eff6ff;color:#1d4ed8;margin-top:8px" onclick="apriBudgetModal()">✏️ Modifica budget totale</button>
       <button class="btn btn-secondary" onclick="resetSessione()">↺ Ricomincia nuovo periodo</button>
     </div>
   </div>
@@ -553,6 +556,19 @@
   </div>
 </div>
 
+<!-- MODAL MODIFICA BUDGET -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <h3>✏️ Modifica budget totale</h3>
+    <label style="margin-top:0">Nuovo budget (€)</label>
+    <input type="number" id="modal-inp-budget" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="chiudiBudgetModal()">Annulla</button>
+      <button class="btn-modal-confirm" onclick="confermaBudget()">Salva</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MODIFICA SPESA -->
 <div class="modal-overlay" id="modal-modifica">
   <div class="modal">
@@ -587,6 +603,27 @@ let modalCtx = { data: null, idx: null, tipo: 'ordinaria' };
 
 // Tipo selezionato per la prossima spesa
 let tipoSelezionato = 'ordinaria';
+
+// ─── MODIFICA BUDGET ──────────────────────────────────────────────────────────
+function apriBudgetModal() {
+  document.getElementById('modal-inp-budget').value = stato.budget;
+  document.getElementById('modal-budget').classList.add('active');
+  setTimeout(() => document.getElementById('modal-inp-budget').select(), 50);
+}
+
+function chiudiBudgetModal() {
+  document.getElementById('modal-budget').classList.remove('active');
+}
+
+function confermaBudget() {
+  const nuovo = parseFloat(document.getElementById('modal-inp-budget').value);
+  if (isNaN(nuovo) || nuovo <= 0) { alert('Inserisci un budget valido.'); return; }
+  stato.budget = nuovo;
+  stato.quotaBase = nuovo / stato.giorni;
+  chiudiBudgetModal();
+  save();
+  aggiorna();
+}
 
 // ─── TIPO TOGGLE ──────────────────────────────────────────────────────────────
 function setTipo(t) {
@@ -631,12 +668,6 @@ function ora() {
   const n = new Date();
   return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
-function prossimo23(dataInizio) {
-  const d = parseDate(dataInizio);
-  let anno = d.getFullYear(), mese = d.getMonth();
-  if (d.getDate() >= 23) { mese++; if (mese > 11) { mese = 0; anno++; } }
-  return new Date(anno, mese, 23);
-}
 function diffGiorni(a, b) {
   return Math.round((b - a) / 86400000) + 1;
 }
@@ -663,13 +694,16 @@ function save() { localStorage.setItem('bgt2_stato', JSON.stringify(stato)); }
 // ─── SESSIONE ─────────────────────────────────────────────────────────────────
 function avviaSessione() {
   const dataS = document.getElementById('inp-data-inizio').value;
+  const dataF = document.getElementById('inp-data-fine').value;
   const budget = parseFloat(document.getElementById('inp-budget').value);
   if (!dataS) { alert('Inserisci una data di inizio.'); return; }
+  if (!dataF) { alert('Inserisci una data di fine.'); return; }
+  if (dataF <= dataS) { alert('La data di fine deve essere successiva alla data di inizio.'); return; }
   if (isNaN(budget) || budget <= 0) { alert('Inserisci un budget valido.'); return; }
-  const fine = prossimo23(dataS);
   const inizio = parseDate(dataS);
+  const fine = parseDate(dataF);
   const giorni = diffGiorni(inizio, fine);
-  stato = { dataInizio: dataS, dataFine: toYMD(fine), budget, quotaBase: budget / giorni, giorni, storico: [] };
+  stato = { dataInizio: dataS, dataFine: dataF, budget, quotaBase: budget / giorni, giorni, storico: [] };
   save(); aggiorna();
 }
 
@@ -1070,6 +1104,9 @@ function aggiornaStorico() {
 // Chiudi modal cliccando fuori
 document.getElementById('modal-modifica').addEventListener('click', function(e) {
   if (e.target === this) chiudiModal();
+});
+document.getElementById('modal-budget').addEventListener('click', function(e) {
+  if (e.target === this) chiudiBudgetModal();
 });
 
 load();
