@@ -723,6 +723,19 @@ function avviaSessione() {
   if (!dataF) { alert('Inserisci una data di fine.'); return; }
   if (dataF <= dataS) { alert('La data di fine deve essere successiva alla data di inizio.'); return; }
   if (isNaN(budget) || budget <= 0) { alert('Inserisci un budget valido.'); return; }
+
+  // ⚠️ PROTEZIONE: se esiste già un periodo con dati, avvisa esplicitamente
+  if (stato.dataInizio && stato.storico.length > 0) {
+    const nGiorni = stato.storico.length;
+    if (!confirm(
+      '⚠️ ATTENZIONE — DATI IN CORSO!\n\n' +
+      'Hai ' + nGiorni + ' giorn' + (nGiorni === 1 ? 'o' : 'i') + ' di spese registrate nel periodo attuale.\n\n' +
+      'Se continui ORA, tutti questi dati andranno persi.\n\n' +
+      '▶ Premi ANNULLA e usa prima "Salva dati periodo" per scaricare il file.\n' +
+      '▶ Premi OK solo se hai già salvato e vuoi davvero cancellare tutto.'
+    )) return;
+  }
+
   const inizio = parseDate(dataS);
   const fine = parseDate(dataF);
   const giorni = diffGiorni(inizio, fine);
@@ -731,7 +744,13 @@ function avviaSessione() {
 }
 
 function resetSessione() {
-  if (!confirm('Vuoi ricominciare? Prima salva i dati del periodo attuale se ne hai bisogno!')) return;
+  const nGiorni = stato.storico ? stato.storico.length : 0;
+  const avviso = nGiorni > 0
+    ? '⚠️ HAI ' + nGiorni + ' GIORN' + (nGiorni === 1 ? 'O' : 'I') + ' DI DATI!\n\n' +
+      '→ Premi ANNULLA e salva prima con "Salva dati periodo".\n\n' +
+      'Sei sicuro di voler cancellare tutto e ricominciare?'
+    : 'Vuoi davvero ricominciare un nuovo periodo?';
+  if (!confirm(avviso)) return;
   localStorage.removeItem('bgt2_stato');
   stato = { dataInizio: null, dataFine: null, budget: 0, quotaBase: 0, giorni: 0, storico: [] };
   document.getElementById('card-setup').classList.remove('hidden');
@@ -908,7 +927,7 @@ function aggiorna() {
 
   if (ggRim <= 0) {
     document.getElementById('lbl-quota-oggi').textContent = '—';
-    document.getElementById('lbl-rimanenti').textContent = 'Periodo terminato';
+    document.getElementById('lbl-rimanenti').textContent = '⚠️ Periodo terminato — i tuoi dati sono al sicuro';
   } else {
     const ogYMD = toYMD(og);
     const recOggi = stato.storico.find(r => r.data === ogYMD);
